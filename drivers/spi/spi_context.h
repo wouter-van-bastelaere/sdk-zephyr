@@ -16,6 +16,8 @@
 #include <zephyr/drivers/spi.h>
 #include <zephyr/kernel.h>
 
+//#include <zephyr/logging/log.h>
+//LOG_MODULE_REGISTER(spi_context_wait_for_completion, LOG_LEVEL_DBG);
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -134,6 +136,7 @@ static inline size_t spi_context_total_rx_len(struct spi_context *ctx);
 
 static inline int spi_context_wait_for_completion(struct spi_context *ctx)
 {
+	//LOG_DBG("spi send inside context wait for completion");
 	int status = 0;
 	bool wait;
 
@@ -143,13 +146,15 @@ static inline int spi_context_wait_for_completion(struct spi_context *ctx)
 	wait = true;
 #endif
 
-	if (wait) {
+	//if (wait) {
 		k_timeout_t timeout;
 
 		/* Do not use any timeout in the slave mode, as in this case
 		 * it is not known when the transfer will actually start and
 		 * what the frequency will be.
 		 */
+		
+		// /*
 		if (IS_ENABLED(CONFIG_SPI_SLAVE) && spi_context_is_slave(ctx)) {
 			timeout = K_FOREVER;
 		} else {
@@ -162,14 +167,15 @@ static inline int spi_context_wait_for_completion(struct spi_context *ctx)
 			timeout_ms += CONFIG_SPI_COMPLETION_TIMEOUT_TOLERANCE;
 
 			timeout = K_MSEC(timeout_ms);
-		}
+		}// */
+		timeout = K_NSEC(100);//K_MSEC(1);
 
 		if (k_sem_take(&ctx->sync, timeout)) {
 			LOG_ERR("Timeout waiting for transfer complete");
 			return -ETIMEDOUT;
 		}
 		status = ctx->sync_status;
-	}
+	//}
 
 #ifdef CONFIG_SPI_SLAVE
 	if (spi_context_is_slave(ctx) && !status) {
